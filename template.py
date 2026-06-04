@@ -1,8 +1,8 @@
 import os
-import pathlib as Path
+from pathlib import Path
 import logging
 
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s]:(%message)s')
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s]: %(message)s")
 project_name="book_recommender_system"
 
 list_of_files = [
@@ -42,11 +42,15 @@ list_of_files = [
 
 
 for filepath in list_of_files:
+    filepath = Path(filepath)
     filedir, filename = os.path.split(filepath)
     if filedir != "":
         os.makedirs(filedir, exist_ok=True)
         logging.info(f"Creating directory: {filedir} for file: {filename}")
     else:
         logging.info(f"Creating file: {filename} in the current directory")
-    with open(filepath, "w") as f:
-        pass
+    if not filepath.exists():
+        filepath.touch()
+        logging.info(f"Created file: {filepath}")
+    else:
+        logging.info(f"File already exists: {filepath}")
