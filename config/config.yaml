@@ -6,3 +6,10 @@ data_ingestion_config:
   dataset_dir: dataset
   ingested_dir: ingested_data
   raw_data_dir: raw_data
+
+
+data_validation_config:
+  cleaned_data_dir: cleaned_data
+  serialized_data_dir: serialized_data
+  Book_csv_file: BX-Books.csv
+  rating_csv_file: BX-Book-Ratings.csv

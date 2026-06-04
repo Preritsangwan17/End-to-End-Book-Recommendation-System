@@ -4,7 +4,10 @@ import sys
 from book_recommender_system.logger.log import logging
 from book_recommender_system.utils.util import read_yaml_file
 from book_recommender_system.exception.exception_handler import AppException
-from book_recommender_system.entity.config_entity import DataIngestionConfig
+from book_recommender_system.entity.config_entity import (
+    DataIngestionConfig,
+    DataValidationConfig
+)
 from book_recommender_system.constant import *
 
 
@@ -42,6 +45,55 @@ class AppConfiguration:
             )
 
             logging.info(f"Data Ingestion Config: {response}")
+            return response
+
+        except Exception as e:
+            raise AppException(e, sys) from e
+
+    def get_data_validation_config(self) -> DataValidationConfig:
+        try:
+            data_validation_config = self.configs_info['data_validation_config']
+            data_ingestion_config = self.configs_info['data_ingestion_config']
+
+            dataset_dir = data_ingestion_config['dataset_dir']
+            artifacts_dir = self.configs_info['artifacts_config']['artifacts_dir']
+
+            book_csv_file = data_validation_config['Book_csv_file']
+            rating_csv_file = data_validation_config['rating_csv_file']
+
+            book_csv_file_dir = os.path.join(
+                artifacts_dir,
+                dataset_dir,
+                data_ingestion_config['ingested_dir'],
+                book_csv_file
+            )
+
+            rating_csv_file_dir = os.path.join(
+                artifacts_dir,
+                dataset_dir,
+                data_ingestion_config['ingested_dir'],
+                rating_csv_file
+            )
+
+            cleaned_data_path = os.path.join(
+                artifacts_dir,
+                dataset_dir,
+                data_validation_config['cleaned_data_dir']
+            )
+
+            serialized_data_dir = os.path.join(
+                artifacts_dir,
+                data_validation_config['serialized_data_dir']
+            )
+
+            response = DataValidationConfig(
+                cleaned_data_dir=cleaned_data_path,
+                serialized_data_dir=serialized_data_dir,
+                Book_csv_file=book_csv_file_dir,
+                rating_csv_file=rating_csv_file_dir
+            )
+
+            logging.info(f"Data Validation Config: {response}")
             return response
 
         except Exception as e:
