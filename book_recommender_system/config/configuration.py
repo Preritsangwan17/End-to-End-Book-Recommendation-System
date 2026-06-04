@@ -6,7 +6,9 @@ from book_recommender_system.utils.util import read_yaml_file
 from book_recommender_system.exception.exception_handler import AppException
 from book_recommender_system.entity.config_entity import (
     DataIngestionConfig,
-    DataValidationConfig
+    DataValidationConfig,
+    DataTransformationConfig,
+    ModelTrainingConfig
 )
 from book_recommender_system.constant import *
 
@@ -14,32 +16,30 @@ from book_recommender_system.constant import *
 class AppConfiguration:
     def __init__(self, config_file_path: str = CONFIG_FILE_PATH):
         try:
-            self.configs_info = read_yaml_file(
-                file_path=config_file_path
-            )
+            self.configs_info = read_yaml_file(file_path=config_file_path)
         except Exception as e:
             raise AppException(e, sys) from e
 
     def get_data_ingestion_config(self) -> DataIngestionConfig:
         try:
-            data_ingestion_config = self.configs_info['data_ingestion_config']
-            artifacts_dir = self.configs_info['artifacts_config']['artifacts_dir']
-            dataset_dir = data_ingestion_config['dataset_dir']
+            data_ingestion_config = self.configs_info["data_ingestion_config"]
+            artifacts_dir = self.configs_info["artifacts_config"]["artifacts_dir"]
+            dataset_dir = data_ingestion_config["dataset_dir"]
 
             ingested_data_dir = os.path.join(
                 artifacts_dir,
                 dataset_dir,
-                data_ingestion_config['ingested_dir']
+                data_ingestion_config["ingested_dir"]
             )
 
             raw_data_dir = os.path.join(
                 artifacts_dir,
                 dataset_dir,
-                data_ingestion_config['raw_data_dir']
+                data_ingestion_config["raw_data_dir"]
             )
 
             response = DataIngestionConfig(
-                dataset_download_url=data_ingestion_config['dataset_download_url'],
+                dataset_download_url=data_ingestion_config["dataset_download_url"],
                 raw_data_dir=raw_data_dir,
                 ingested_dir=ingested_data_dir
             )
@@ -52,48 +52,113 @@ class AppConfiguration:
 
     def get_data_validation_config(self) -> DataValidationConfig:
         try:
-            data_validation_config = self.configs_info['data_validation_config']
-            data_ingestion_config = self.configs_info['data_ingestion_config']
+            data_validation_config = self.configs_info["data_validation_config"]
+            data_ingestion_config = self.configs_info["data_ingestion_config"]
 
-            dataset_dir = data_ingestion_config['dataset_dir']
-            artifacts_dir = self.configs_info['artifacts_config']['artifacts_dir']
+            artifacts_dir = self.configs_info["artifacts_config"]["artifacts_dir"]
+            dataset_dir = data_ingestion_config["dataset_dir"]
 
-            book_csv_file = data_validation_config['Book_csv_file']
-            rating_csv_file = data_validation_config['rating_csv_file']
+            book_csv_file = data_validation_config["Book_csv_file"]
+            rating_csv_file = data_validation_config["rating_csv_file"]
 
             book_csv_file_dir = os.path.join(
                 artifacts_dir,
                 dataset_dir,
-                data_ingestion_config['ingested_dir'],
+                data_ingestion_config["ingested_dir"],
                 book_csv_file
             )
 
             rating_csv_file_dir = os.path.join(
                 artifacts_dir,
                 dataset_dir,
-                data_ingestion_config['ingested_dir'],
+                data_ingestion_config["ingested_dir"],
                 rating_csv_file
             )
 
-            cleaned_data_path = os.path.join(
+            cleaned_data_dir = os.path.join(
                 artifacts_dir,
                 dataset_dir,
-                data_validation_config['cleaned_data_dir']
+                data_validation_config["cleaned_data_dir"]
             )
 
             serialized_data_dir = os.path.join(
                 artifacts_dir,
-                data_validation_config['serialized_data_dir']
+                data_validation_config["serialized_data_dir"]
             )
 
             response = DataValidationConfig(
-                cleaned_data_dir=cleaned_data_path,
+                cleaned_data_dir=cleaned_data_dir,
                 serialized_data_dir=serialized_data_dir,
                 Book_csv_file=book_csv_file_dir,
                 rating_csv_file=rating_csv_file_dir
             )
 
             logging.info(f"Data Validation Config: {response}")
+            return response
+
+        except Exception as e:
+            raise AppException(e, sys) from e
+
+    def get_data_transformation_config(self) -> DataTransformationConfig:
+        try:
+            data_transformation_config = self.configs_info["data_transformation_config"]
+            data_validation_config = self.configs_info["data_validation_config"]
+            data_ingestion_config = self.configs_info["data_ingestion_config"]
+
+            artifacts_dir = self.configs_info["artifacts_config"]["artifacts_dir"]
+            dataset_dir = data_ingestion_config["dataset_dir"]
+
+            transformed_data_dir = os.path.join(
+                artifacts_dir,
+                data_transformation_config["transformed_data_dir"]
+            )
+
+            cleaned_data_dir = os.path.join(
+                artifacts_dir,
+                dataset_dir,
+                data_validation_config["cleaned_data_dir"]
+            )
+
+            response = DataTransformationConfig(
+                transformed_data_dir=transformed_data_dir,
+                clean_data_dir=cleaned_data_dir
+            )
+
+            logging.info(f"Data Transformation Config: {response}")
+            return response
+
+        except Exception as e:
+            raise AppException(e, sys) from e
+
+    def get_model_training_config(self) -> ModelTrainingConfig:
+        try:
+            model_training_config = self.configs_info["model_training_config"]
+            data_transformation_config = self.configs_info["data_transformation_config"]
+
+            artifacts_dir = self.configs_info["artifacts_config"]["artifacts_dir"]
+
+            trained_model_dir = os.path.join(
+                artifacts_dir,
+                model_training_config["trained_model_dir"]
+            )
+
+            trained_model_name = model_training_config.get("model_file_name")
+            if trained_model_name is None:
+                trained_model_name = model_training_config.get("trained_model_name")
+
+            transformed_data_file_path = os.path.join(
+                artifacts_dir,
+                data_transformation_config["transformed_data_dir"],
+                data_transformation_config.get("transformed_data_file", "transformed.pkl")
+            )
+
+            response = ModelTrainingConfig(
+                trained_model_dir=trained_model_dir,
+                trained_model_name=trained_model_name,
+                transformed_data_file_path=transformed_data_file_path
+            )
+
+            logging.info(f"Model Training Config: {response}")
             return response
 
         except Exception as e:

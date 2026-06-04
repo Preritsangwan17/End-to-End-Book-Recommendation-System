@@ -13,3 +13,15 @@ data_validation_config:
   serialized_data_dir: serialized_data
   Book_csv_file: BX-Books.csv
   rating_csv_file: BX-Book-Ratings.csv
+
+data_transformation_config:
+  transformed_data_dir: transformed_data
+  transformed_data_file: transformed.pkl
+
+model_training_config:
+  trained_model_dir: trained_model
+  model_file_name: model.pkl
+
+model_training_config:
+  trained_model_dir: trained_model
+  model_file_name: model.pkl
