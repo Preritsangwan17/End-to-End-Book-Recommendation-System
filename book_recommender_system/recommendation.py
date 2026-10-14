@@ -2,13 +2,16 @@
 
 from pathlib import Path
 import pickle
-import numpy as np
 from scipy.sparse import csr_matrix
 
 
 class Recommender:
     def __init__(self, model, pivot, ratings):
-        if len(pivot) != model.n_samples_fit_:
+        if pivot.index.has_duplicates or len(pivot) == 0:
+            raise ValueError("Book pivot must contain unique, non-empty titles")
+        if not {"title", "image_url"}.issubset(ratings.columns):
+            raise ValueError("Rating catalog requires title and image_url columns")
+        if len(pivot) != model.n_samples_fit_ or pivot.shape[1] != model.n_features_in_:
             raise ValueError("Model and book pivot do not match. Retrain the pipeline.")
         self.model, self.pivot, self.ratings = model, pivot, ratings
 

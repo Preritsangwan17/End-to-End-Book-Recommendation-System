@@ -29,3 +29,15 @@ def test_unknown_title_has_clear_error(engine):
 def test_missing_artifacts_has_actionable_error(tmp_path):
     with pytest.raises(FileNotFoundError, match="python main.py"):
         Recommender.load(tmp_path)
+
+
+def test_rejects_same_rows_but_different_feature_dimensions(engine):
+    with pytest.raises(ValueError, match="do not match"):
+        Recommender(engine.model, engine.pivot.assign(extra_user=0), engine.ratings)
+
+
+def test_rejects_duplicate_titles(engine):
+    duplicated = engine.pivot.copy()
+    duplicated.index = ["A", "A", "C"]
+    with pytest.raises(ValueError, match="unique"):
+        Recommender(engine.model, duplicated, engine.ratings)
