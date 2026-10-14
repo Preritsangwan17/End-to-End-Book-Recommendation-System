@@ -39,11 +39,13 @@ Training produces current artifacts in `artifacts/`; historical notebook artifac
 
 ```mermaid
 flowchart TD
-  D["Book-Crossing CSV files"] --> C["Filter readers and books"]
-  C --> P["Book-by-user rating matrix"]
-  P --> M["Sparse nearest-neighbour model"]
-  M --> A["Matching serialized artifacts"]
-  A --> U["Streamlit recommendation interface"]
+  D["Book-Crossing CSV files"] --> C["Filter and build rating matrix"]
+  C --> M["Fit nearest-neighbour model"]
+  C --> A["Catalog and rating artifacts"]
+  M --> Q["Recommendation service"]
+  A --> Q
+  U["Streamlit book selection"] --> Q
+  Q --> R["Similar titles and covers"]
 ```
 
 Users with more than 200 rating records are retained. Books require at least 50 records in that filtered
