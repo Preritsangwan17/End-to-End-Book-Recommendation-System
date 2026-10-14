@@ -8,6 +8,11 @@ An item-based collaborative-filtering project with a staged training pipeline an
 The system finds books with similar reader-rating patterns using a sparse book-by-user matrix and
 brute-force nearest-neighbour search.
 
+
+**Project status:** runnable recommendation demo with a Streamlit interface and tested training pipeline.
+
+[Quick start](#quick-start) · [Architecture](#architecture) · [Model card](docs/MODEL_CARD.md) · [Verification](#verification-and-containers) · [Contributing](CONTRIBUTING.md)
+
 ## Project highlights
 
 - Four stages: local data ingestion, filtering/validation, matrix transformation and model fitting.
@@ -51,7 +56,7 @@ flowchart TD
 Users with more than 200 rating records are retained. Books require at least 50 records in that filtered
 population. Duplicate user/title pairs are removed and missing matrix values are filled with zero.
 The current model uses Euclidean distance, the default for `NearestNeighbors(algorithm="brute")`;
-this repository does **not** claim cosine similarity or personalized user recommendations.
+recommendations compare existing titles using aggregate reader-rating patterns.
 
 ## Repository guide
 
@@ -85,7 +90,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-The training pipeline was run against the committed CSVs during cleanup. Tests verify recommendation
+The training pipeline has been verified against the committed CSVs. Tests verify recommendation
 behavior on a small synthetic catalog. Software tests do not establish ranking performance.
 Only load pickle artifacts you trust.
 
@@ -97,7 +102,7 @@ docker run --rm -p 8501:8501 book-recommender
 ```
 
 The container includes the current artifacts if trained before the build; it excludes the raw notebook
-dataset. Docker commands are provided for convenience and were not executed in this environment.
+dataset. The container path is documented but has not been independently verified.
 
 ## License and author
 
