@@ -11,8 +11,9 @@ from book_recommender_system.exception.exception_handler import AppException
 
 
 class ModelTrainer:
-    def __init__(self, app_config=AppConfiguration()):
+    def __init__(self, app_config=None):
         try:
+            app_config = app_config or AppConfiguration()
             self.model_trainer_config = app_config.get_model_training_config()
         except Exception as e:
             raise AppException(e, sys) from e
@@ -35,7 +36,7 @@ class ModelTrainer:
 
             file_name = os.path.join(
                 self.model_trainer_config.trained_model_dir,
-                self.model_trainer_config.trained_model_name
+                self.model_trainer_config.trained_model_name,
             )
 
             pickle.dump(model, open(file_name, "wb"))

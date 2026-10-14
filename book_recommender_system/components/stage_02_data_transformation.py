@@ -9,9 +9,12 @@ from book_recommender_system.exception.exception_handler import AppException
 
 
 class DataTransformation:
-    def __init__(self, app_config: AppConfiguration = AppConfiguration()):
+    def __init__(self, app_config: AppConfiguration | None = None):
         try:
-            self.data_transformation_config = app_config.get_data_transformation_config()
+            app_config = app_config or AppConfiguration()
+            self.data_transformation_config = (
+                app_config.get_data_transformation_config()
+            )
             self.data_validation_config = app_config.get_data_validation_config()
         except Exception as e:
             raise AppException(e, sys) from e
@@ -19,28 +22,31 @@ class DataTransformation:
     def get_data_transformer(self):
         try:
             clean_data_file = os.path.join(
-                self.data_transformation_config.clean_data_dir,
-                "clean_data.csv"
+                self.data_transformation_config.clean_data_dir, "clean_data.csv"
             )
 
             df = pd.read_csv(clean_data_file)
 
             # create pivot table
-            book_pivot = df.pivot_table(columns='user_id', index='title', values='rating')
+            book_pivot = df.pivot_table(
+                columns="user_id", index="title", values="rating"
+            )
             logging.info(f"Shape of book pivot table: {book_pivot.shape}")
             book_pivot.fillna(0, inplace=True)
 
             # saving pivot table data
-            os.makedirs(self.data_transformation_config.transformed_data_dir, exist_ok=True)
+            os.makedirs(
+                self.data_transformation_config.transformed_data_dir, exist_ok=True
+            )
             pickle.dump(
                 book_pivot,
                 open(
                     os.path.join(
                         self.data_transformation_config.transformed_data_dir,
-                        "transformed.pkl"
+                        "transformed.pkl",
                     ),
-                    "wb"
-                )
+                    "wb",
+                ),
             )
             logging.info(
                 f"Saved pivot table data to {self.data_transformation_config.transformed_data_dir}"
@@ -56,10 +62,10 @@ class DataTransformation:
                 open(
                     os.path.join(
                         self.data_validation_config.serialized_data_dir,
-                        "book_names.pkl"
+                        "book_names.pkl",
                     ),
-                    "wb"
-                )
+                    "wb",
+                ),
             )
             logging.info(
                 f"Saved book_names serialization object to {self.data_validation_config.serialized_data_dir}"
@@ -72,10 +78,10 @@ class DataTransformation:
                 open(
                     os.path.join(
                         self.data_validation_config.serialized_data_dir,
-                        "book_pivot.pkl"
+                        "book_pivot.pkl",
                     ),
-                    "wb"
-                )
+                    "wb",
+                ),
             )
             logging.info(
                 f"Saved book_pivot serialization object to {self.data_validation_config.serialized_data_dir}"

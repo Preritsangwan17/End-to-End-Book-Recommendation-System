@@ -1,98 +1,53 @@
-import os
-import sys
-import shutil
-import zipfile
-import urllib.request
+"""Use local Book-Crossing data first, with an explicit download fallback."""
 
-from book_recommender_system.logger.log import logging
-from book_recommender_system.exception.exception_handler import AppException
+from pathlib import Path
+import shutil
+import urllib.request
+import zipfile
 from book_recommender_system.config.configuration import AppConfiguration
+from book_recommender_system.constant import ROOT_DIR
+
+REQUIRED_FILES = ("BX-Books.csv", "BX-Book-Ratings.csv", "BX-Users.csv")
 
 
 class DataIngestion:
-    def __init__(self, app_config=AppConfiguration()):
-        """
-        DataIngestion Initialization
-        """
-        try:
-            logging.info(f"{'='*20}Data Ingestion Log started.{'='*20} ")
-            self.data_ingestion_config = app_config.get_data_ingestion_config()
-        except Exception as e:
-            raise AppException(e, sys) from e
+    def __init__(self, app_config=None):
+        self.data_ingestion_config = (
+            app_config or AppConfiguration()
+        ).get_data_ingestion_config()
 
-    def download_data(self):
-        """Download the zip file from the configured URL."""
-        try:
-            os.makedirs(self.data_ingestion_config.raw_data_dir, exist_ok=True)
-
-            download_url = self.data_ingestion_config.dataset_download_url
-            zip_file_path = os.path.join(
-                self.data_ingestion_config.raw_data_dir, "books_data.zip"
-            )
-
-            logging.info(f"Downloading data from {download_url} ...")
-            urllib.request.urlretrieve(download_url, zip_file_path)
-            logging.info(f"Data downloaded successfully at {zip_file_path}")
-            return zip_file_path
-        except Exception as e:
-            logging.info("Download failed. Will try local fallback.")
-            raise AppException(e, sys) from e
-
-    def extract_zip_file(self, zip_file_path: str):
-        """Extract the downloaded zip."""
-        try:
-            os.makedirs(self.data_ingestion_config.ingested_dir, exist_ok=True)
-
-            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
-                zip_ref.extractall(self.data_ingestion_config.ingested_dir)
-
-            logging.info(f"Extracted data into {self.data_ingestion_config.ingested_dir}")
-        except Exception as e:
-            raise AppException(e, sys) from e
-
-    def _use_local_notebook_data(self):
-        """Fallback: copy CSVs from notebook/ if download fails or zip not present."""
-        try:
-            notebook_dir = os.path.join(os.getcwd(), "notebook")
-            os.makedirs(self.data_ingestion_config.ingested_dir, exist_ok=True)
-
-            for fname in ["BX-Books.csv", "BX-Book-Ratings.csv", "BX-Users.csv"]:
-                src = os.path.join(notebook_dir, fname)
-                dst = os.path.join(self.data_ingestion_config.ingested_dir, fname)
-                if os.path.exists(src):
-                    shutil.copy2(src, dst)
-                    logging.info(f"Using local notebook data: {fname}")
-                else:
-                    logging.info(f"Local file not found: {src}")
-
-            logging.info("Fell back to local notebook CSVs.")
-        except Exception as e:
-            raise AppException(e, sys) from e
+    def extract_zip_file(self, archive):
+        destination = Path(self.data_ingestion_config.ingested_dir).resolve()
+        destination.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(archive) as handle:
+            for member in handle.infolist():
+                if (
+                    not (destination / member.filename)
+                    .resolve()
+                    .is_relative_to(destination)
+                ):
+                    raise ValueError("Unsafe path in dataset archive")
+            handle.extractall(destination)
 
     def initiate_data_ingestion(self):
-        """
-        Main method to start data ingestion.
-        Tries download + extract, falls back to local notebook data.
-        """
-        try:
-            # Try download
-            try:
-                zip_path = self.download_data()
-                self.extract_zip_file(zip_path)
-            except Exception as ex:
-                logging.info(f"Download/extract failed: {ex}")
-                self._use_local_notebook_data()
-
-            # Verify we have the required files
-            ingested_dir = self.data_ingestion_config.ingested_dir
-            required_files = ["BX-Books.csv", "BX-Book-Ratings.csv", "BX-Users.csv"]
-            for f in required_files:
-                full_path = os.path.join(ingested_dir, f)
-                if not os.path.exists(full_path):
-                    raise FileNotFoundError(f"Missing required file after ingestion: {full_path}")
-
-            logging.info("Data ingestion completed successfully.")
-            return self.data_ingestion_config.ingested_dir
-
-        except Exception as e:
-            raise AppException(e, sys) from e
+        destination = Path(self.data_ingestion_config.ingested_dir)
+        destination.mkdir(parents=True, exist_ok=True)
+        source = ROOT_DIR / "notebook"
+        if all((source / name).is_file() for name in REQUIRED_FILES):
+            for name in REQUIRED_FILES:
+                shutil.copy2(source / name, destination / name)
+        elif (ROOT_DIR / "books_data.zip").is_file():
+            self.extract_zip_file(ROOT_DIR / "books_data.zip")
+        elif not all((destination / name).is_file() for name in REQUIRED_FILES):
+            archive = Path(self.data_ingestion_config.raw_data_dir) / "books_data.zip"
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            urllib.request.urlretrieve(
+                self.data_ingestion_config.dataset_download_url, archive
+            )
+            self.extract_zip_file(archive)
+        for name in REQUIRED_FILES:
+            if not (destination / name).is_file():
+                raise FileNotFoundError(
+                    f"Missing Book-Crossing CSV: {destination / name}"
+                )
+        return str(destination)

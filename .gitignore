@@ -217,3 +217,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local development and generated output
+.venv/
+.DS_Store
+*.pyc
+logs/
